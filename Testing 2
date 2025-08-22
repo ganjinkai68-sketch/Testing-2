@@ -1,4 +1,6 @@
--- Ant Simulator 2 Complete Farming Script
+-- Ant Simulator 2 Complete Farming Script with Rayfield UI
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
 local success, err = pcall(function()
     -- Key System
     local validKeys = {
@@ -99,14 +101,19 @@ local success, err = pcall(function()
             wait(0.5)
         end
 
-        -- Main Script
-        local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
-        local window = DrRayLibrary:Load("v2 Ant Simulator 2 Script", "Default")
-        local autofarmTab = DrRayLibrary.newTab("Autofarm Fields")
-        local bushTab = DrRayLibrary.newTab("Bush Farm")
-        local speedTab = DrRayLibrary.newTab("Custom Tween Speed")
-        local walkspeedTab = DrRayLibrary.newTab("Custom Walkspeed")
-        local boosterTab = DrRayLibrary.newTab("Auto Booster")
+        -- Main Script with Rayfield
+        local Window = Rayfield:CreateWindow({
+            Name = "v2 Ant Simulator 2 Script",
+            LoadingTitle = "Ant Simulator 2 Script",
+            LoadingSubtitle = "by YourName",
+            ConfigurationSaving = {
+                Enabled = false,
+            },
+            Discord = {
+                Enabled = false,
+            },
+            KeySystem = false, -- We already have our own key system
+        })
 
         -- Services
         local lp = game:GetService("Players").LocalPlayer
@@ -116,25 +123,42 @@ local success, err = pcall(function()
         local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local tweenSpeed = 700
 
+        -- Tabs
+        local autofarmTab = Window:CreateTab("Autofarm Fields", 4483362458)
+        local bushTab = Window:CreateTab("Bush Farm", 4483362458)
+        local speedTab = Window:CreateTab("Custom Tween Speed", 4483362458)
+        local walkspeedTab = Window:CreateTab("Custom Walkspeed", 4483362458)
+        local boosterTab = Window:CreateTab("Auto Booster", 4483362458)
+
         -- Tween Speed Input
-        speedTab.newInput("Tween Speed", "Set global tween speed", function(text)
-            local num = tonumber(text)
-            if num and num > 0 then
-                tweenSpeed = num
-            end
-        end)
+        speedTab:CreateInput({
+            Name = "Tween Speed",
+            PlaceholderText = "Set global tween speed",
+            RemoveTextAfterFocusLost = false,
+            Callback = function(Text)
+                local num = tonumber(Text)
+                if num and num > 0 then
+                    tweenSpeed = num
+                end
+            end,
+        })
 
         -- WalkSpeed Input
-        walkspeedTab.newInput("WalkSpeed", "Set your walk speed", function(text)
-            local num = tonumber(text)
-            if num and num > 0 then
-                local char = lp.Character or lp.CharacterAdded:Wait()
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    hum.WalkSpeed = num
+        walkspeedTab:CreateInput({
+            Name = "WalkSpeed",
+            PlaceholderText = "Set your walk speed",
+            RemoveTextAfterFocusLost = false,
+            Callback = function(Text)
+                local num = tonumber(Text)
+                if num and num > 0 then
+                    local char = lp.Character or lp.CharacterAdded:Wait()
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.WalkSpeed = num
+                    end
                 end
-            end
-        end)
+            end,
+        })
 
         -- Reset WalkSpeed on respawn
         lp.CharacterAdded:Connect(function(char)
@@ -172,63 +196,66 @@ local success, err = pcall(function()
 
         -- Autofarm Setup
         local function setupAutofarmButton(tab, name, positions, extraAction)
-            tab.newButton(name, "Start "..name.." Farm", function()
-                local running = false
-                local gui = Instance.new("ScreenGui", lp:WaitForChild("PlayerGui"))
-                gui.Name = name .. "_GUI"
-                gui.ResetOnSpawn = false
+            tab:CreateButton({
+                Name = name,
+                Callback = function()
+                    local running = false
+                    local gui = Instance.new("ScreenGui", lp:WaitForChild("PlayerGui"))
+                    gui.Name = name .. "_GUI"
+                    gui.ResetOnSpawn = false
 
-                local frame = Instance.new("Frame", gui)
-                frame.Size = UDim2.new(0, 200, 0, 100)
-                frame.Position = UDim2.new(0.5, -100, 0.5, -50)
-                frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-                frame.Active = true
-                frame.Draggable = true
-                frame.Parent = gui
+                    local frame = Instance.new("Frame", gui)
+                    frame.Size = UDim2.new(0, 200, 0, 100)
+                    frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+                    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+                    frame.Active = true
+                    frame.Draggable = true
+                    frame.Parent = gui
 
-                local title = Instance.new("TextLabel", frame)
-                title.Size = UDim2.new(1, 0, 0.2, 0)
-                title.Text = name
-                title.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-                title.TextColor3 = Color3.new(1, 1, 1)
+                    local title = Instance.new("TextLabel", frame)
+                    title.Size = UDim2.new(1, 0, 0.2, 0)
+                    title.Text = name
+                    title.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                    title.TextColor3 = Color3.new(1, 1, 1)
 
-                local startBtn = Instance.new("TextButton", frame)
-                startBtn.Size = UDim2.new(0.4, 0, 0.3, 0)
-                startBtn.Position = UDim2.new(0.1, 0, 0.5, 0)
-                startBtn.Text = "Start"
-                startBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-                startBtn.TextColor3 = Color3.new(1, 1, 1)
+                    local startBtn = Instance.new("TextButton", frame)
+                    startBtn.Size = UDim2.new(0.4, 0, 0.3, 0)
+                    startBtn.Position = UDim2.new(0.1, 0, 0.5, 0)
+                    startBtn.Text = "Start"
+                    startBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+                    startBtn.TextColor3 = Color3.new(1, 1, 1)
 
-                local stopBtn = Instance.new("TextButton", frame)
-                stopBtn.Size = UDim2.new(0.4, 0, 0.3, 0)
-                stopBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
-                stopBtn.Text = "Stop"
-                stopBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-                stopBtn.TextColor3 = Color3.new(1, 1, 1)
+                    local stopBtn = Instance.new("TextButton", frame)
+                    stopBtn.Size = UDim2.new(0.4, 0, 0.3, 0)
+                    stopBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
+                    stopBtn.Text = "Stop"
+                    stopBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+                    stopBtn.TextColor3 = Color3.new(1, 1, 1)
 
-                startBtn.MouseButton1Click:Connect(function()
-                    if running then return end
-                    running = true
-                    task.spawn(function()
-                        local i = 1
-                        while running do
-                            pcall(function()
-                                moveto(positions[i], tweenSpeed)
-                                vu:ClickButton1(Vector2.new(9999, 9999))
-                                if extraAction then extraAction() end
-                                i += 1
-                                if i > #positions then i = 1 end
-                            end)
-                            wait(0.1)
-                        end
+                    startBtn.MouseButton1Click:Connect(function()
+                        if running then return end
+                        running = true
+                        task.spawn(function()
+                            local i = 1
+                            while running do
+                                pcall(function()
+                                    moveto(positions[i], tweenSpeed)
+                                    vu:ClickButton1(Vector2.new(9999, 9999))
+                                    if extraAction then extraAction() end
+                                    i += 1
+                                    if i > #positions then i = 1 end
+                                end)
+                                wait(0.1)
+                            end
+                        end)
                     end)
-                end)
 
-                stopBtn.MouseButton1Click:Connect(function()
-                    running = false
-                    gui:Destroy()
-                end)
-            end)
+                    stopBtn.MouseButton1Click:Connect(function()
+                        running = false
+                        gui:Destroy()
+                    end)
+                end,
+            })
         end
 
         -- All Autofarm Fields
@@ -319,29 +346,41 @@ local success, err = pcall(function()
         end)
 
         -- Tool Spam
-        autofarmTab.newButton("Collect Pollen (Tool Spam)", "Spams tool usage rapidly", function()
-            while true do
-                ReplicatedStorage.Events.Server_Event:FireServer("UseTool", 1)
-                wait()
-            end
-        end)
+        autofarmTab:CreateButton({
+            Name = "Collect Pollen (Tool Spam)",
+            Callback = function()
+                while true do
+                    ReplicatedStorage.Events.Server_Event:FireServer("UseTool", 1)
+                    wait()
+                end
+            end,
+        })
 
         -- Booster Tab
-        boosterTab.newButton("Go to Booster", "Tween and click booster", function()
-            local cf = CFrame.new(382.64447, 111.642372, 234.749268, 0.757048726, -6.96210449e-08, -0.6533584, 1.45878856e-08, 1, -8.96557069e-08, 0.6533584, 5.83426214e-08, 0.757048726)
-            moveto(cf, tweenSpeed)
-            task.wait(1)
+        boosterTab:CreateButton({
+            Name = "Go to Booster",
+            Callback = function()
+                local cf = CFrame.new(382.64447, 111.642372, 234.749268, 0.757048726, -6.96210449e-08, -0.6533584, 1.45878856e-08, 1, -8.96557069e-08, 0.6533584, 5.83426214e-08, 0.757048726)
+                moveto(cf, tweenSpeed)
+                task.wait(1)
 
-            local booster = workspace:FindFirstChildWhichIsA("ClickDetector", true)
-            if booster then
-                fireclickdetector(booster)
-            end
-            task.wait(5)
-            local nextCFrame = CFrame.new(-533.24408, 19.7453423, -7.5827961, 0.970744371, 6.43168274e-09, 0.240115345, -2.28714914e-08, 1, 6.5679636e-08, -0.240115345, -6.92499356e-08, 0.970744371)
-            moveto(nextCFrame, tweenSpeed)
-        end)
+                local booster = workspace:FindFirstChildWhichIsA("ClickDetector", true)
+                if booster then
+                    fireclickdetector(booster)
+                end
+                task.wait(5)
+                local nextCFrame = CFrame.new(-533.24408, 19.7453423, -7.5827961, 0.970744371, 6.43168274e-09, 0.240115345, -2.28714914e-08, 1, 6.5679636e-08, -0.240115345, -6.92499356e-08, 0.970744371)
+                moveto(nextCFrame, tweenSpeed)
+            end,
+        })
 
         loadingScreen:Destroy()
+        Rayfield:Notify({
+            Title = "Script Loaded",
+            Content = "Ant Simulator 2 Script has been successfully loaded!",
+            Duration = 6.5,
+            Image = 4483362458,
+        })
     end
 
     submitBtn.MouseButton1Click:Connect(function()
