@@ -241,7 +241,14 @@ local success, err = pcall(function()
                                 pcall(function()
                                     moveto(positions[i], tweenSpeed)
                                     vu:ClickButton1(Vector2.new(9999, 9999))
-                                    if extraAction then extraAction() end
+                                    if extraAction then 
+                                        local shouldStop = extraAction()
+                                        if shouldStop then
+                                            running = false
+                                            gui:Destroy()
+                                            return
+                                        end
+                                    end
                                     i += 1
                                     if i > #positions then i = 1 end
                                 end)
@@ -331,6 +338,9 @@ local success, err = pcall(function()
                 [3] = workspace.Anthills:FindFirstChild("3").Platform
             }
             ReplicatedStorage.Events.Server_Function:InvokeServer(unpack(args))
+            
+            -- Return true to stop after one tap
+            return true
         end)
 
         -- Bush Autofarm with 5-second delay
