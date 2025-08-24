@@ -4,7 +4,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local success, err = pcall(function()
     -- Key System
     local validKeys = {
-        "godlike",
+        "anticohackontop",
         "SIM456", 
         "KEY789",
         "V2SCRIPT"
