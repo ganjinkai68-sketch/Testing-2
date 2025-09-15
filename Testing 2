@@ -168,6 +168,7 @@ local success, err = pcall(function()
 
         -- Helper functions
         local function noclip()
+            if not lp.Character then return end
             for _, v in pairs(lp.Character:GetDescendants()) do
                 if v:IsA("BasePart") and v.CanCollide then
                     v.CanCollide = false
@@ -194,174 +195,259 @@ local success, err = pcall(function()
             conn:Disconnect()
         end
 
-        -- Autofarm Setup
-        local function setupAutofarmButton(tab, name, positions, extraAction)
-            tab:CreateButton({
-                Name = name,
-                Callback = function()
-                    local running = false
-                    local gui = Instance.new("ScreenGui", lp:WaitForChild("PlayerGui"))
-                    gui.Name = name .. "_GUI"
-                    gui.ResetOnSpawn = false
+        -- Instant Converter Function
+        local function useInstantConverter()
+            local converter = workspace.Toys.Converters:FindFirstChild("Conv1_2")
+            if converter then
+                local args = {
+                    [1] = "InstantConverterUse",
+                    [2] = converter
+                }
+                game:GetService("ReplicatedStorage").Events.Server_Event:FireServer(unpack(args))
+                return true
+            end
+            return false
+        end
 
-                    local frame = Instance.new("Frame", gui)
-                    frame.Size = UDim2.new(0, 200, 0, 100)
-                    frame.Position = UDim2.new(0.5, -100, 0.5, -50)
-                    frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-                    frame.Active = true
-                    frame.Draggable = true
-                    frame.Parent = gui
+        -- Auto conversion function
+        local function autoConvert()
+            Rayfield:Notify({
+                Title = "Converting",
+                Content = "Going to converter...",
+                Duration = 3,
+                Image = 4483362458,
+            })
+            
+            local converterCFrame = CFrame.new(56.91, 5.1, -384.15)
+            moveto(converterCFrame, tweenSpeed)
+            wait(1)
+            
+            local success = useInstantConverter()
+            if success then
+                Rayfield:Notify({
+                    Title = "Conversion Complete",
+                    Content = "Successfully converted pollen!",
+                    Duration = 3,
+                    Image = 4483362458,
+                })
+            else
+                Rayfield:Notify({
+                    Title = "Conversion Failed",
+                    Content = "Could not find converter!",
+                    Duration = 3,
+                    Image = 4483362458,
+                })
+            end
+            wait(1)
+        end
 
-                    local title = Instance.new("TextLabel", frame)
-                    title.Size = UDim2.new(1, 0, 0.2, 0)
-                    title.Text = name
-                    title.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-                    title.TextColor3 = Color3.new(1, 1, 1)
+        -- Global variables for autofarm
+        local currentFarm = nil
+        local farmPositions = {}
+        local farmRunning = false
+        local farmThread = nil
+        local currentPositionIndex = 1
 
-                    local startBtn = Instance.new("TextButton", frame)
-                    startBtn.Size = UDim2.new(0.4, 0, 0.3, 0)
-                    startBtn.Position = UDim2.new(0.1, 0, 0.5, 0)
-                    startBtn.Text = "Start"
-                    startBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-                    startBtn.TextColor3 = Color3.new(1, 1, 1)
+        -- Field positions
+        local fieldPositions = {
+            Poppy = {
+                CFrame.new(-323.7, 92.6, 375.6),
+                CFrame.new(-324.1, 92.6, 290.8),
+                CFrame.new(-258.9, 92.6, 375.2),
+                CFrame.new(-258.3, 92.6, 291.1),
+                CFrame.new(-174.3, 92.6, 375.6),
+                CFrame.new(-175.7, 92.6, 288.2)
+            },
+            Rose = {
+                CFrame.new(301.7, 246.4, 1080.9),
+                CFrame.new(325.4, 246.4, 1015.4),
+                CFrame.new(250.2, 246.4, 1073.7),
+                CFrame.new(276.5, 246.4, 1002.3),
+                CFrame.new(188.9, 246.4, 1042.9),
+                CFrame.new(212.2, 246.4, 978.4)
+            },
+            Walnut = {
+                CFrame.new(-379.11, 128.45, 568.97),
+                CFrame.new(-378.5, 128.45, 500.79),
+                CFrame.new(-326.65, 128.45, 572.96),
+                CFrame.new(-328.52, 128.45, 496.82),
+                CFrame.new(-244.79, 128.45, 558.73),
+                CFrame.new(-243.41, 128.45, 513.85)
+            },
+            Mushroom = {
+                CFrame.new(62.31, 3.95, 108.66),
+                CFrame.new(17.46, 3.95, 108.07),
+                CFrame.new(74.43, 3.95, 59.53),
+                CFrame.new(15.09, 3.95, 63.52),
+                CFrame.new(73.41, 3.95, -8.22),
+                CFrame.new(15.22, 3.95, -6.17)
+            },
+            Sunflower = {
+                CFrame.new(-59.65, 3.95, 165.12),
+                CFrame.new(-146.56, 3.95, 164.30),
+                CFrame.new(-48.69, 3.95, 124.96),
+                CFrame.new(-150.17, 3.95, 125.84),
+                CFrame.new(-58.69, 3.95, 91.44),
+                CFrame.new(-146.91, 3.95, 92.59)
+            },
+            BlueFlower = {
+                CFrame.new(-233.459366, 3.95000076, 258.478912, -0.967376649, -4.04582536e-08, 0.253342539, -4.09408933e-08, 1, 3.36694184e-09, -0.253342539, -7.11496906e-09, -0.967376649),
+                CFrame.new(-235.450974, 3.95000076, 197.455597, 0.999859452, -6.98463598e-09, -0.0167656709, 7.10343961e-09, 1, 7.02656777e-09, 0.0167656709, -7.14467419e-09, 0.999859452),
+                CFrame.new(-306.601959, 3.95000076, 258.46582, -0.730305493, -1.91949994e-08, 0.683120668, -4.54034783e-08, 1, -2.04406216e-08, -0.683120668, -4.59439526e-08, -0.730305493),
+                CFrame.new(-306.5289, 3.95000076, 201.09671, 0.992938638, -4.4186157e-09, -0.11862912, 7.65322827e-09, 1, 2.68110441e-08, 0.11862912, -2.75296159e-08, 0.992938638),
+                CFrame.new(-357.429504, 3.95000076, 196.849792, 0.080260098, -3.64968358e-08, 0.996773958, -5.91784843e-09, 1, 3.70914606e-08, -0.996773958, -8.87572149e-09, 0.080260098),
+                CFrame.new(-359.743256, 3.95000076, 268.864655, -0.987487555, 3.9282857e-09, 0.157697096, -1.565023e-09, 1, -3.47103821e-08, -0.157697096, -3.45228699e-08, -0.987487555)
+            },
+            Pumpkin = {
+                CFrame.new(373.159698, 162.842407, 587.53479, 0.999432206, -1.55503805e-08, -0.0336941294, 1.17665451e-08, 1, -1.12497851e-07, 0.0336941294, 1.12037512e-07, 0.999432206),
+                CFrame.new(372.398163, 162.842407, 638.750916, -0.997170866, 2.08942375e-08, 0.0751681551, 1.98372021e-08, 1, -1.48088803e-08, -0.0751681551, -1.32758586e-08, -0.997170866),
+                CFrame.new(314.549927, 162.842407, 576.398499, 0.897601724, -7.48403153e-08, 0.440807343, 8.99989132e-08, 1, -1.34817757e-08, -0.440807343, 5.17734478e-08, 0.897601724),
+                CFrame.new(314.065338, 162.842407, 659.807861, -0.99738729, -7.73977007e-08, 0.0722399652, -7.42259942e-08, 1, 4.65896903e-08, -0.0722399652, 4.11058814e-08, -0.99738729),
+                CFrame.new(259.706482, 162.842407, 594.072571, 0.937290013, -6.94779771e-08, 0.348550528, 9.2652904e-08, 1, -4.98196471e-08, -0.348550528, 7.89896717e-08, 0.937290013),
+                CFrame.new(263.931244, 162.842407, 651.632324, -0.99848175, -9.26985138e-08, -0.0550840087, -9.4632135e-08, 1, 3.24947891e-08, 0.0550840087, 3.76581717e-08, -0.99848175)
+            }
+        }
 
-                    local stopBtn = Instance.new("TextButton", frame)
-                    stopBtn.Size = UDim2.new(0.4, 0, 0.3, 0)
-                    stopBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
-                    stopBtn.Text = "Stop"
-                    stopBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-                    stopBtn.TextColor3 = Color3.new(1, 1, 1)
-
-                    startBtn.MouseButton1Click:Connect(function()
-                        if running then return end
-                        running = true
-                        task.spawn(function()
-                            local i = 1
-                            while running do
-                                pcall(function()
-                                    moveto(positions[i], tweenSpeed)
-                                    vu:ClickButton1(Vector2.new(9999, 9999))
-                                    if extraAction then 
-                                        local shouldStop = extraAction()
-                                        if shouldStop then
-                                            running = false
-                                            gui:Destroy()
-                                            return
-                                        end
-                                    end
-                                    i += 1
-                                    if i > #positions then i = 1 end
-                                end)
-                                wait(0.1)
-                            end
+        -- Start/stop farming function
+        local function toggleFarming(fieldName, positions)
+            if farmRunning and currentFarm == fieldName then
+                -- Stop farming
+                farmRunning = false
+                if farmThread then
+                    farmThread:Disconnect()
+                    farmThread = nil
+                end
+                currentFarm = nil
+                currentPositionIndex = 1
+                Rayfield:Notify({
+                    Title = "Farming Stopped",
+                    Content = "Stopped farming " .. fieldName,
+                    Duration = 3,
+                    Image = 4483362458,
+                })
+            else
+                -- Stop current farm if any
+                if farmRunning then
+                    farmRunning = false
+                    if farmThread then
+                        farmThread:Disconnect()
+                        farmThread = nil
+                    end
+                end
+                
+                -- Start new farm
+                currentFarm = fieldName
+                farmPositions = positions
+                farmRunning = true
+                currentPositionIndex = 1
+                
+                Rayfield:Notify({
+                    Title = "Farming Started",
+                    Content = "Started farming " .. fieldName .. " (Auto-convert every 2 mins)",
+                    Duration = 5,
+                    Image = 4483362458,
+                })
+                
+                -- Start farming thread
+                farmThread = rs.Heartbeat:Connect(function()
+                    if not farmRunning or not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then
+                        return
+                    end
+                    
+                    local startTime = tick()
+                    local convertTime = 120 -- 2 minutes in seconds
+                    
+                    -- Farm for 2 minutes
+                    while farmRunning and tick() - startTime < convertTime do
+                        if not farmRunning then break end
+                        
+                        -- Move to current position
+                        pcall(function()
+                            moveto(farmPositions[currentPositionIndex], tweenSpeed)
+                            vu:ClickButton1(Vector2.new(9999, 9999))
                         end)
-                    end)
+                        
+                        -- Move to next position
+                        currentPositionIndex = currentPositionIndex + 1
+                        if currentPositionIndex > #farmPositions then
+                            currentPositionIndex = 1
+                        end
+                        
+                        wait(0.5) -- Small delay between moves
+                    end
+                    
+                    -- Time to convert (if still running)
+                    if farmRunning then
+                        autoConvert()
+                        -- Reset timer and continue farming
+                        startTime = tick()
+                    end
+                end)
+            end
+        end
 
-                    stopBtn.MouseButton1Click:Connect(function()
-                        running = false
-                        gui:Destroy()
-                    end)
+        -- Create toggle buttons for all fields
+        for fieldName, positions in pairs(fieldPositions) do
+            autofarmTab:CreateToggle({
+                Name = "Auto Farm " .. fieldName,
+                CurrentValue = false,
+                Flag = "Farm" .. fieldName,
+                Callback = function(Value)
+                    if Value then
+                        toggleFarming(fieldName, positions)
+                    else
+                        if currentFarm == fieldName then
+                            toggleFarming(fieldName, positions)
+                        end
+                    end
                 end,
             })
         end
 
-        -- All Autofarm Fields
-        setupAutofarmButton(autofarmTab, "Poppy Field", {
-            CFrame.new(-323.7, 92.6, 375.6),
-            CFrame.new(-324.1, 92.6, 290.8),
-            CFrame.new(-258.9, 92.6, 375.2),
-            CFrame.new(-258.3, 92.6, 291.1),
-            CFrame.new(-174.3, 92.6, 375.6),
-            CFrame.new(-175.7, 92.6, 288.2)
+        -- Bush Autofarm
+        bushTab:CreateToggle({
+            Name = "Bush Autofarm",
+            CurrentValue = false,
+            Flag = "BushFarm",
+            Callback = function(Value)
+                if Value then
+                    toggleFarming("Bush", {
+                        CFrame.new(-6.31, 3.95, -213.73),
+                        CFrame.new(171.74, 27.95, 1.31),
+                        CFrame.new(-27.49, 3.95, 180.0),
+                        CFrame.new(158.91, 27.95, 371.99)
+                    })
+                else
+                    if currentFarm == "Bush" then
+                        toggleFarming("Bush", {})
+                    end
+                end
+            end,
         })
-
-        setupAutofarmButton(autofarmTab, "Rose Field", {
-            CFrame.new(301.7, 246.4, 1080.9),
-            CFrame.new(325.4, 246.4, 1015.4),
-            CFrame.new(250.2, 246.4, 1073.7),
-            CFrame.new(276.5, 246.4, 1002.3),
-            CFrame.new(188.9, 246.4, 1042.9),
-            CFrame.new(212.2, 246.4, 978.4)
-        })
-
-        setupAutofarmButton(autofarmTab, "Walnut Field", {
-            CFrame.new(-379.11, 128.45, 568.97),
-            CFrame.new(-378.5, 128.45, 500.79),
-            CFrame.new(-326.65, 128.45, 572.96),
-            CFrame.new(-328.52, 128.45, 496.82),
-            CFrame.new(-244.79, 128.45, 558.73),
-            CFrame.new(-243.41, 128.45, 513.85)
-        })
-
-        setupAutofarmButton(autofarmTab, "Mushroom Field", {
-            CFrame.new(62.31, 3.95, 108.66),
-            CFrame.new(17.46, 3.95, 108.07),
-            CFrame.new(74.43, 3.95, 59.53),
-            CFrame.new(15.09, 3.95, 63.52),
-            CFrame.new(73.41, 3.95, -8.22),
-            CFrame.new(15.22, 3.95, -6.17)
-        })
-
-        setupAutofarmButton(autofarmTab, "Sunflower Field", {
-            CFrame.new(-59.65, 3.95, 165.12),
-            CFrame.new(-146.56, 3.95, 164.30),
-            CFrame.new(-48.69, 3.95, 124.96),
-            CFrame.new(-150.17, 3.95, 125.84),
-            CFrame.new(-58.69, 3.95, 91.44),
-            CFrame.new(-146.91, 3.95, 92.59)
-        })
-
-        setupAutofarmButton(autofarmTab, "Blue Flower Field", {
-            CFrame.new(-233.459366, 3.95000076, 258.478912, -0.967376649, -4.04582536e-08, 0.253342539, -4.09408933e-08, 1, 3.36694184e-09, -0.253342539, -7.11496906e-09, -0.967376649),
-            CFrame.new(-235.450974, 3.95000076, 197.455597, 0.999859452, -6.98463598e-09, -0.0167656709, 7.10343961e-09, 1, 7.02656777e-09, 0.0167656709, -7.14467419e-09, 0.999859452),
-            CFrame.new(-306.601959, 3.95000076, 258.46582, -0.730305493, -1.91949994e-08, 0.683120668, -4.54034783e-08, 1, -2.04406216e-08, -0.683120668, -4.59439526e-08, -0.730305493),
-            CFrame.new(-306.5289, 3.95000076, 201.09671, 0.992938638, -4.4186157e-09, -0.11862912, 7.65322827e-09, 1, 2.68110441e-08, 0.11862912, -2.75296159e-08, 0.992938638),
-            CFrame.new(-357.429504, 3.95000076, 196.849792, 0.080260098, -3.64968358e-08, 0.996773958, -5.91784843e-09, 1, 3.70914606e-08, -0.996773958, -8.87572149e-09, 0.080260098),
-            CFrame.new(-359.743256, 3.95000076, 268.864655, -0.987487555, 3.9282857e-09, 0.157697096, -1.565023e-09, 1, -3.47103821e-08, -0.157697096, -3.45228699e-08, -0.987487555)
-        })
-
-        setupAutofarmButton(autofarmTab, "Pumpkin Field", {
-            CFrame.new(373.159698, 162.842407, 587.53479, 0.999432206, -1.55503805e-08, -0.0336941294, 1.17665451e-08, 1, -1.12497851e-07, 0.0336941294, 1.12037512e-07, 0.999432206),
-            CFrame.new(372.398163, 162.842407, 638.750916, -0.997170866, 2.08942375e-08, 0.0751681551, 1.98372021e-08, 1, -1.48088803e-08, -0.0751681551, -1.32758586e-08, -0.997170866),
-            CFrame.new(314.549927, 162.842407, 576.398499, 0.897601724, -7.48403153e-08, 0.440807343, 8.99989132e-08, 1, -1.34817757e-08, -0.440807343, 5.17734478e-08, 0.897601724),
-            CFrame.new(314.065338, 162.842407, 659.807861, -0.99738729, -7.73977007e-08, 0.0722399652, -7.42259942e-08, 1, 4.65896903e-08, -0.0722399652, 4.11058814e-08, -0.99738729),
-            CFrame.new(259.706482, 162.842407, 594.072571, 0.937290013, -6.94779771e-08, 0.348550528, 9.2652904e-08, 1, -4.98196471e-08, -0.348550528, 7.89896717e-08, 0.937290013),
-            CFrame.new(263.931244, 162.842407, 651.632324, -0.99848175, -9.26985138e-08, -0.0550840087, -9.4632135e-08, 1, 3.24947891e-08, 0.0550840087, 3.76581717e-08, -0.99848175)
-        })
-
-        setupAutofarmButton(autofarmTab, "Auto Convert", {
-            CFrame.new(56.91, 5.1, -384.15)
-        }, function()
-            local args = {
-                [1] = "ActionCall",
-                [2] = "Anthill",
-                [3] = workspace.Anthills:FindFirstChild("3").Platform
-            }
-            ReplicatedStorage.Events.Server_Function:InvokeServer(unpack(args))
-            
-            -- Return true to stop after one tap
-            return true
-        end)
-
-        -- Bush Autofarm with 5-second delay
-        setupAutofarmButton(bushTab, "Bush Autofarm", {
-            CFrame.new(-6.31, 3.95, -213.73),
-            CFrame.new(171.74, 27.95, 1.31),
-            CFrame.new(-27.49, 3.95, 180.0),
-            CFrame.new(158.91, 27.95, 371.99)
-        }, function()
-            local bushFolder = workspace:FindFirstChild("Bushes")
-            if not bushFolder then return end
-            wait(5)
-        end)
 
         -- Tool Spam
-        autofarmTab:CreateButton({
+        local toolSpamRunning = false
+        local toolSpamThread = nil
+        
+        autofarmTab:CreateToggle({
             Name = "Collect Pollen (Tool Spam)",
-            Callback = function()
-                while true do
-                    ReplicatedStorage.Events.Server_Event:FireServer("UseTool", 1)
-                    wait()
+            CurrentValue = false,
+            Flag = "ToolSpam",
+            Callback = function(Value)
+                if Value then
+                    toolSpamRunning = true
+                    toolSpamThread = rs.Heartbeat:Connect(function()
+                        if not toolSpamRunning then return end
+                        pcall(function()
+                            ReplicatedStorage.Events.Server_Event:FireServer("UseTool", 1)
+                        end)
+                    end)
+                else
+                    toolSpamRunning = false
+                    if toolSpamThread then
+                        toolSpamThread:Disconnect()
+                        toolSpamThread = nil
+                    end
                 end
             end,
         })
